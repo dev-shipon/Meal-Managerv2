@@ -981,7 +981,8 @@ export default function MealApp() {
         const batch = writeBatch(db);
         optimisticEntries.forEach((entry) => {
           const docRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'bazar'), entry.id);
-          batch.set(docRef, { ...entry, id: undefined });
+          const { id, isPendingSync, ...data } = entry;
+          batch.set(docRef, data);
         });
         await batch.commit();
         setIsBazarSubmitting(false);
@@ -1615,10 +1616,10 @@ ${JSON.stringify(bazarItemsForAi, null, 2)}
   const generateSpecificBillPDF = (type) => {
     const dueDatesObj = dueDates || {};
     const dateMapping = {
-      wifi: dueDatesObj.wifi || '7',
-      current: dueDatesObj.current || '10',
-      rent: dueDatesObj.rent || '5',
-      maid: dueDatesObj.maid || '12'
+      wifi: dueDatesObj.wifi || '15',
+      current: dueDatesObj.current || '25',
+      rent: dueDatesObj.rent || '8',
+      maid: dueDatesObj.maid || '5'
     };
     const titles = { wifi: "ওয়াইফাই বিল", current: "বিদ্যুৎ বিল", rent: "বাসা ভাড়া", maid: "খালার বেতন" };
 
