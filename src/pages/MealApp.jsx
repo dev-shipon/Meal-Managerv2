@@ -1,3 +1,4 @@
+// Last Updated: 2026-04-22 - Fixed bazar and pdf issues
 import React, { useMemo, useRef, useState, useEffect, useTransition, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
