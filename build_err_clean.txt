@@ -1,0 +1,32 @@
+
+> meal-app@0.0.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 34 modules transformed.
+x Build failed in 529ms
+error during build:
+[vite-plugin-pwa:build] [plugin vite-plugin-pwa:build] src/pages/MealApp.jsx (3801:169): There was an error during the build:
+  Transform failed with 1 error:
+C:/Users/Talukar Family/Downloads/meal-web-main/meal-web-main/meal-app/src/pages/MealApp.jsx:3801:169: ERROR: Syntax error "n"
+Additionally, handling the error in the 'buildEnd' hook caused the following error:
+  Transform failed with 1 error:
+C:/Users/Talukar Family/Downloads/meal-web-main/meal-web-main/meal-app/src/pages/MealApp.jsx:3801:169: ERROR: Syntax error "n"
+file: C:/Users/Talukar Family/Downloads/meal-web-main/meal-web-main/meal-app/src/pages/MealApp.jsx:3801:169
+
+Syntax error "n"
+3800|                          onClick={async () => {
+3801|                            if (await showConfirm({ message: `"${name}" কে মেম্বার লিস্ট থেকে ডিলিট করতে চান?`\n⚠️ এই মেম্বারের সব মিল, জমা ও বাজার ডাটা থেকে যাবে।" })) {
+3802|                              deleteMember(m.id);
+   |  ^
+3803|                            }
+3804|                          }}
+
+    at getRollupError (file:///C:/Users/Talukar%20Family/Downloads/meal-web-main/meal-web-main/meal-app/node_modules/rollup/dist/es/shared/parseAst.js:406:41)
+    at file:///C:/Users/Talukar%20Family/Downloads/meal-web-main/meal-web-main/meal-app/node_modules/rollup/dist/es/shared/node-entry.js:23863:39
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async catchUnfinishedHookActions (file:///C:/Users/Talukar%20Family/Downloads/meal-web-main/meal-web-main/meal-app/node_modules/rollup/dist/es/shared/node-entry.js:23321:16)
+    at async rollupInternal (file:///C:/Users/Talukar%20Family/Downloads/meal-web-main/meal-web-main/meal-app/node_modules/rollup/dist/es/shared/node-entry.js:23846:5)
+    at async build (file:///C:/Users/Talukar%20Family/Downloads/meal-web-main/meal-web-main/meal-app/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:65709:14)
+    at async CAC.<anonymous> (file:///C:/Users/Talukar%20Family/Downloads/meal-web-main/meal-web-main/meal-app/node_modules/vite/dist/node/cli.js:829:5)

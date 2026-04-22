@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * Member login (before Google sign-in) only uses getDoc by document id — not list.
+     * join_key_index doc id = lowercase mess id; body has { groupId }.
+     */
+    match /join_key_index/{key} {
+      allow get: if true;
+      allow list: if request.auth != null;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    /**
+     * Same: unauthenticated users may read a single group doc by id to verify Mess ID on login / join.
+     */
+    match /groups/{groupId} {
+      allow get: if true;
+      allow list: if request.auth != null;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    /**
+     * Everything else (artifacts, members, etc.) stays auth-only, same spirit as your previous rule.
+     */
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
