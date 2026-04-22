@@ -978,21 +978,19 @@ export default function MealApp() {
 
     runInBackground(
       async () => {
-        const batch = writeBatch(db);
-        optimisticEntries.forEach((entry) => {
-          const docRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'bazar'), entry.id);
+        const promises = optimisticEntries.map(entry => {
           const { id, isPendingSync, ...data } = entry;
-          batch.set(docRef, data);
+          return setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bazar', id), data);
         });
-        await batch.commit();
+        await Promise.all(promises);
         setIsBazarSubmitting(false);
         showToast('বাজার সেভ হয়েছে!', 'success');
       },
-      () => {
+      (err) => {
         const optimisticIds = new Set(optimisticEntries.map((item) => item.id));
         setBazarList((prev) => prev.filter((item) => !optimisticIds.has(item.id)));
         setIsBazarSubmitting(false);
-        showToast("বাজার সেভ করতে সমস্যা হয়েছে।", 'error');
+        showToast(`বাজার সেভ করতে সমস্যা হয়েছে: ${err.message || 'Unknown error'}`, 'error');
       }
     );
   };
@@ -3222,7 +3220,7 @@ ${JSON.stringify(bazarItemsForAi, null, 2)}
                         <button type="button" onClick={() => setBazarRows([...bazarRows, { id: Date.now(), item: '', amount: '', qty: '' }])} className="w-full sm:w-auto text-xs font-bold text-indigo-600 bg-indigo-50 border border-dashed border-indigo-200 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-100"><Plus size={16} /> আইটেম যোগ করুন</button>
                         <div className="w-full sm:w-auto bg-green-50 border border-green-200 px-4 py-2 rounded-xl flex items-center justify-between sm:justify-start gap-4">
                           <span className="text-xs font-bold text-green-700">মোট খরচ:</span>
-                          <span className="text-lg font-black text-green-700">৳{bazarRows.reduce((a, b) => a + Number(b.amount || 0), 0)}</span>
+                          <span className="text-lg font-black text-green-700">৳{bazarRows.reduce((a, b) => a + safeNum(b.amount), 0)}</span>
                         </div>
                       </div>
 
