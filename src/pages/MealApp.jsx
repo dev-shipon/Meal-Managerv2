@@ -599,7 +599,7 @@ export default function MealApp() {
   };
 
   const generateAIMenu = () => {
-    alert('Gemini API key সেভ হয়েছে। এখন আবার AI feature চালান।');
+    showToast('Gemini API key সেভ হয়েছে। এখন আবার AI feature চালান।', 'info');
   };
 
   const generateSpecificMeal = async (day, mealType) => {
@@ -621,7 +621,7 @@ export default function MealApp() {
       await updateMenuMeal(day, mealType, suggestedText);
     } catch (e) {
       console.error(e);
-      alert("AI suggestion failed: " + e.message);
+      showToast("AI suggestion failed: " + e.message, 'error');
     }
     setIsGeneratingMenu(false);
   };
@@ -705,9 +705,9 @@ export default function MealApp() {
           console.error("Notice Email error:", err);
         }
       }
-      alert(`নোটিশ আপডেট হয়েছে এবং ${emailsSent} জনকে ইমেইলে জানানো হয়েছে!`);
+      showToast(`নোটিশ আপডেট হয়েছে এবং ${emailsSent} জনকে ইমেইলে জানানো হয়েছে!`, 'success');
     } else {
-      alert("নোটিশ আপডেট হয়েছে! (কারো ইমেইল না থাকায় মেইল পাঠানো যায়নি)");
+      showToast("নোটিশ আপডেট হয়েছে! (কারো ইমেইল না থাকায় মেইল পাঠানো যায়নি)", 'warning');
     }
     e.target.reset();
   };
@@ -721,7 +721,7 @@ export default function MealApp() {
       rent: e.target.rent.value,
       maid: e.target.maid.value || "5"
     });
-    alert("শেষ তারিখ আপডেট সফল!");
+    showToast("শেষ তারিখ আপডেট সফল!", 'success');
   };
 
   const updateBills = async (e) => {
@@ -733,7 +733,7 @@ export default function MealApp() {
       pcCharge: Number(e.target.pcCharge.value),
       maid: Number(e.target.maid?.value || 0)
     });
-    alert("বিল আপডেট সফল!");
+    showToast("বিল আপডেট সফল!", 'success');
   };
 
   const toggleBillStatus = async (memberId, type) => {
@@ -761,7 +761,7 @@ export default function MealApp() {
           m => m.email && m.email.trim().toLowerCase() === trimmedEmailLower
         );
         if (emailExists) {
-          alert(`⚠️ এই ইমেইল (${trimmedEmail}) দিয়ে ইতিমধ্যে একজন মেম্বার আছেন! ডুপ্লিকেট তৈরি হবে না।`);
+          showToast(`⚠️ এই ইমেইল (${trimmedEmail}) দিয়ে ইতিমধ্যে একজন মেম্বার আছেন!`, 'warning');
           return;
         }
       }
@@ -784,9 +784,9 @@ export default function MealApp() {
 
       setNewMemberData({ name: '', phone: '', email: '' });
       setShowAddMemberModal(false);
-      alert('নতুন মেম্বার সফলভাবে যোগ করা হয়েছে!');
+      showToast('নতুন মেম্বার সফলভাবে যোগ করা হয়েছে!', 'success');
     } catch (err) {
-      alert('সমস্যা হয়েছে: ' + err.message);
+      showToast('সমস্যা হয়েছে: ' + err.message, 'error');
     }
   };
 
@@ -797,7 +797,7 @@ export default function MealApp() {
 
   const toggleManagerRole = async (memberUid) => {
     if (!isHost) {
-      alert("Only the host can assign managers!");
+      showToast("দয়া করে হোস্টকে বলুন ম্যানেজার রোল পরিবর্তন করতে!", 'warning');
       return;
     }
     const groupRef = doc(db, 'groups', appId);
@@ -819,7 +819,7 @@ export default function MealApp() {
     if (!isManager || !selectedMemberDetail) return;
     const name = clampMemberName(editContactData.name);
     if (!name) {
-      alert('\u0985\u09A8\u09C1\u0997\u09CD\u09B0\u09B9 \u0995\u09B0\u09C7 \u09AE\u09C7\u09AE\u09CD\u09AC\u09BE\u09B0\u09C7\u09B0 \u09A8\u09BE\u09AE \u09A6\u09BF\u09A8\u0964');
+      showToast('অনুগ্রহ করে মেম্বারের নাম দিন।', 'warning');
       return;
     }
     try {
@@ -837,15 +837,18 @@ export default function MealApp() {
         email: editContactData.email
       });
       setEditingMemberContact(false);
-      alert("তথ্য আপডেট করা হয়েছে!");
+      showToast("তথ্য আপডেট করা হয়েছে!", 'success');
     } catch (e) {
       console.error(e);
-      alert("আপডেট ব্যর্থ হয়েছে!");
+      showToast("আপডেট ব্যর্থ হয়েছে!", 'error');
     }
   };
 
   const deleteMember = async (id) => {
-    if (window.confirm("মেম্বার ডিলিট করতে চান?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'members', id));
+    if (await showConfirm({ title: 'মেম্বার ডিলিট', message: 'মেম্বারটি কি চিরস্থায়ীভাবে ডিলিট করতে চান?', danger: true })) {
+      await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'members', id));
+      showToast('মেম্বার ডিলিট করা হয়েছে', 'success');
+    }
   };
 
   const updateMeal = async (mId, count) => {
@@ -886,6 +889,7 @@ export default function MealApp() {
           },
         }));
         alert("মিল আপডেট করতে সমস্যা হয়েছে।");
+        showToast("মিল আপডেট করতে সমস্যা হয়েছে।", 'error');
       }
     );
   };
@@ -945,8 +949,8 @@ export default function MealApp() {
     const bazarType = formData.get('type') || 'cash';
 
     const validRows = bazarRows.filter(r => r.item.trim() && r.amount && r.qty.trim());
-    if (validRows.length === 0) { alert("অন্তত একটি বাজার আইটেম দিন"); return; }
-    if (selectedBazarMembers.length === 0) { alert("অন্তত একজনকে নির্বাচন করুন"); return; }
+    if (validRows.length === 0) { showToast("অন্তত একটি বাজার আইটেম দিন", 'warning'); return; }
+    if (selectedBazarMembers.length === 0) { showToast("অন্তত একজনকে নির্বাচন করুন", 'warning'); return; }
 
     const totalAmount = validRows.reduce((sum, row) => sum + safeNum(row.amount), 0);
     const combinedItemName = validRows.map(row => `${row.item} (${row.qty})`).join(', ');
@@ -999,8 +1003,8 @@ export default function MealApp() {
     e.preventDefault();
     const form = e.target;
     const validRows = bazarRows.filter(r => r.item.trim() && r.amount && r.qty.trim());
-    if (validRows.length === 0) { alert("অন্তত একটি বাজার আইটেম দিন"); return; }
-    if (!loggedInMember) { alert("আপনার মেম্বার প্রোফাইল পাওয়া যায়নি।"); return; }
+    if (validRows.length === 0) { showToast("অন্তত একটি বাজার আইটেম দিন", 'warning'); return; }
+    if (!loggedInMember) { showToast("আপনার মেম্বার প্রোফাইল পাওয়া যায়নি।", 'error'); return; }
 
     const totalAmount = validRows.reduce((sum, row) => sum + safeNum(row.amount), 0);
     const combinedItemName = validRows.map(row => `${row.item} (${row.qty})`).join(', ');
@@ -1066,32 +1070,35 @@ export default function MealApp() {
         approvedAt: new Date().toISOString()
       });
       await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bazar_requests', req.id));
-      alert("বাজার রিকোয়েস্ট approve করা হয়েছে।");
+      showToast("বাজার রিকোয়েস্ট অ্যাপ্রুভ করা হয়েছে।", 'success');
     } catch (e) {
       console.error(e);
-      alert("রিকোয়েস্ট approve করতে সমস্যা হয়েছে।");
+      showToast("রিকোয়েস্ট অ্যাপ্রুভ করতে সমস্যা হয়েছে।", 'error');
     }
   };
 
   const handleRejectBazarRequest = async (reqId) => {
-    if (!window.confirm("এই বাজার রিকোয়েস্ট reject করতে চান?")) return;
     try {
-      await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bazar_requests', reqId));
+      if (await showConfirm({ title: 'রিজেক্ট করুন', message: 'এই রিকোয়েস্টটি কি রিজেক্ট করতে চান?', danger: true })) {
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bazar_requests', reqId));
+        showToast("রিকোয়েস্ট রিজেক্ট করা হয়েছে।", 'info');
+      }
     } catch (e) {
       console.error(e);
-      alert("রিকোয়েস্ট reject করতে সমস্যা হয়েছে।");
+      showToast("রিকোয়েস্ট রিজেক্ট করতে সমস্যা হয়েছে।", 'error');
     }
   };
 
   const removeBazar = async (bazarId) => {
-    if (!isManager) return;
-    if (!window.confirm("এই বাজার এন্ট্রি delete করতে চান?")) return;
-    try {
-      await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bazar', bazarId));
-      if (selectedBazarDetail?.id === bazarId) setSelectedBazarDetail(null);
-    } catch (e) {
-      console.error(e);
-      alert("বাজার delete করতে সমস্যা হয়েছে।");
+    if (await showConfirm({ title: 'বাজার ডিলিট', message: 'এই বাজার এন্ট্রি কি ডিলিট করতে চান?', danger: true })) {
+      try {
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'bazar', bazarId));
+        if (selectedBazarDetail?.id === bazarId) setSelectedBazarDetail(null);
+        showToast('বাজার ডিলিট করা হয়েছে', 'success');
+      } catch (e) {
+        console.error(e);
+        showToast("বাজার ডিলিট করতে সমস্যা হয়েছে।", 'error');
+      }
     }
   };
 
@@ -1116,12 +1123,14 @@ export default function MealApp() {
   };
 
   const removeFine = async (fineId) => {
-    if (!window.confirm("এই দণ্ড মাফ করতে চান?")) return;
-    try {
-      await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fines', fineId));
-    } catch (e) {
-      console.error(e);
-      alert("দণ্ড মাফ করতে সমস্যা হয়েছে।");
+    if (await showConfirm({ title: 'ফাইন মওকুফ', message: 'আপনি কি এই ফাইনটি মওকুফ করতে চান?', danger: true })) {
+      try {
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'fines', fineId));
+        showToast('ফাইন মওকুফ করা হয়েছে', 'success');
+      } catch (e) {
+        console.error(e);
+        showToast("ফাইন মওকুফ করতে সমস্যা হয়েছে।", 'error');
+      }
     }
   };
 
@@ -1137,9 +1146,11 @@ export default function MealApp() {
         await batch.commit();
       };
       await Promise.all([batchDelete('bazar'), batchDelete('meals'), batchDelete('deposits'), batchDelete('fines'), batchDelete('bill_tracking')]);
-      alert("ডাটা রিসেট সম্পন্ন!");
+      showToast("ডাটা রিসেট সম্পন্ন হয়েছে!", 'success');
       setShowResetModal(false);
-    } catch (e) { alert("Reset Error: " + e.message); }
+    } catch (e) { 
+      showToast("Reset Error: " + e.message, 'error'); 
+    }
     setLoading(false);
   };
 
