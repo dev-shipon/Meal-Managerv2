@@ -1,116 +1,95 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../contexts/ToastContext';
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
 const TOAST_CONFIG = {
   success: {
     icon: CheckCircle,
-    bg: 'bg-emerald-500',
-    border: 'border-emerald-400',
-    bar: 'bg-emerald-300',
-    text: 'text-white',
-    shadow: 'shadow-emerald-200',
+    color: 'emerald',
+    iconColor: 'bg-emerald-100 text-emerald-600',
+    border: 'border-emerald-100',
+    bar: 'bg-emerald-500',
   },
   error: {
     icon: XCircle,
-    bg: 'bg-red-500',
-    border: 'border-red-400',
-    bar: 'bg-red-300',
-    text: 'text-white',
-    shadow: 'shadow-red-200',
+    color: 'rose',
+    iconColor: 'bg-rose-100 text-rose-600',
+    border: 'border-rose-100',
+    bar: 'bg-rose-500',
   },
   warning: {
     icon: AlertTriangle,
-    bg: 'bg-amber-500',
-    border: 'border-amber-400',
-    bar: 'bg-amber-300',
-    text: 'text-white',
-    shadow: 'shadow-amber-200',
+    color: 'amber',
+    iconColor: 'bg-amber-100 text-amber-600',
+    border: 'border-amber-100',
+    bar: 'bg-amber-500',
   },
   info: {
     icon: Info,
-    bg: 'bg-blue-500',
-    border: 'border-blue-400',
-    bar: 'bg-blue-300',
-    text: 'text-white',
-    shadow: 'shadow-blue-200',
+    color: 'sky',
+    iconColor: 'bg-sky-100 text-sky-600',
+    border: 'border-sky-100',
+    bar: 'bg-sky-500',
   },
 };
 
 function ToastItem({ toast, onRemove }) {
-  const [visible, setVisible] = useState(false);
-  const [leaving, setLeaving] = useState(false);
   const config = TOAST_CONFIG[toast.type] || TOAST_CONFIG.info;
   const Icon = config.icon;
 
-  useEffect(() => {
-    const showTimer = setTimeout(() => setVisible(true), 10);
-    const hideTimer = setTimeout(() => {
-      setLeaving(true);
-      setTimeout(() => onRemove(toast.id), 350);
-    }, toast.duration);
-    return () => { clearTimeout(showTimer); clearTimeout(hideTimer); };
-  }, []);
-
-  const handleClose = () => {
-    setLeaving(true);
-    setTimeout(() => onRemove(toast.id), 350);
-  };
-
   return (
-    <div
-      style={{
-        transition: 'all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
-        transform: visible && !leaving ? 'translateY(0) scale(1)' : 'translateY(-20px) scale(0.93)',
-        opacity: visible && !leaving ? 1 : 0,
-        pointerEvents: leaving ? 'none' : 'auto',
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: -20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9, y: 10, transition: { duration: 0.2 } }}
+      drag="x"
+      dragConstraints={{ left: 0, right: 0 }}
+      onDragEnd={(_, info) => {
+        if (Math.abs(info.offset.x) > 100) onRemove(toast.id);
       }}
-      className={`relative flex items-start gap-3 px-4 py-3 rounded-2xl shadow-xl ${config.shadow} ${config.bg} ${config.text} border ${config.border} min-w-[260px] max-w-[340px] overflow-hidden`}
-      role="alert"
+      className={`group relative flex items-center gap-3 p-4 pr-10 mb-2 bg-white/90 backdrop-blur-xl rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border ${config.border} min-w-[320px] max-w-[400px] pointer-events-auto cursor-grab active:cursor-grabbing overflow-hidden`}
     >
-      <Icon size={20} className="flex-shrink-0 mt-0.5" strokeWidth={2.5} />
-      <span className="flex-1 text-sm font-semibold leading-snug pr-1">{toast.message}</span>
+      <div className={`flex-shrink-0 w-10 h-10 rounded-xl ${config.iconColor} flex items-center justify-center shadow-sm`}>
+        <Icon size={20} strokeWidth={2.5} />
+      </div>
+      
+      <div className="flex-1">
+        <p className="text-slate-800 text-sm font-bold leading-tight">{toast.message}</p>
+      </div>
+
       <button
-        onClick={handleClose}
-        className="flex-shrink-0 opacity-70 hover:opacity-100 transition-opacity mt-0.5"
-        aria-label="বন্ধ করুন"
+        onClick={() => onRemove(toast.id)}
+        className="absolute top-2 right-2 p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
       >
         <X size={16} strokeWidth={2.5} />
       </button>
-      {/* Progress bar */}
-      <div
-        className={`absolute bottom-0 left-0 h-1 ${config.bar} rounded-full`}
-        style={{
-          animation: `toast-progress ${toast.duration}ms linear forwards`,
-        }}
+
+      {/* Modern Progress Bar */}
+      <motion.div
+        initial={{ width: "100%" }}
+        animate={{ width: "0%" }}
+        transition={{ duration: toast.duration / 1000, ease: "linear" }}
+        className={`absolute bottom-0 left-0 h-1 ${config.bar} opacity-60`}
       />
-      <style>{`
-        @keyframes toast-progress {
-          from { width: 100%; }
-          to { width: 0%; }
-        }
-      `}</style>
-    </div>
+    </motion.div>
   );
 }
 
 export default function Toast() {
   const { toasts, removeToast } = useToast();
 
-  if (!toasts.length) return null;
-
   return createPortal(
-    <div
-      className="fixed left-1/2 flex flex-col items-center gap-3 w-full px-4"
-      style={{ top: '24px', transform: 'translateX(-50%)', pointerEvents: 'none', zIndex: 999999 }}
-    >
-      {toasts.map((toast) => (
-        <div key={toast.id} style={{ pointerEvents: 'auto' }}>
-          <ToastItem toast={toast} onRemove={removeToast} />
-        </div>
-      ))}
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999999] flex flex-col items-center pointer-events-none w-full px-4 max-h-screen overflow-hidden">
+      <AnimatePresence mode="popLayout" initial={false}>
+        {toasts.map((toast) => (
+          <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
+        ))}
+      </AnimatePresence>
     </div>,
     document.body
   );
 }
+

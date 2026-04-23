@@ -1,77 +1,74 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useConfirm } from '../contexts/ToastContext';
 import { AlertTriangle, Trash2 } from 'lucide-react';
 
 export default function ConfirmDialog() {
   const { dialog } = useConfirm();
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (dialog) {
-      const t = setTimeout(() => setVisible(true), 10);
-      return () => clearTimeout(t);
-    } else {
-      setVisible(false);
-    }
-  }, [dialog]);
-
-  if (!dialog) return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0  flex items-center justify-center p-4"
-      style={{ zIndex: 99999,
-        transition: 'background 0.25s',
-        background: visible ? 'rgba(15, 23, 42, 0.55)' : 'rgba(15, 23, 42, 0)',
-        backdropFilter: visible ? 'blur(4px)' : 'none',
-      }}
-      onClick={dialog.onCancel}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 border border-slate-100"
-        style={{
-          transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-          transform: visible ? 'translateY(0) scale(1)' : 'translateY(40px) scale(0.95)',
-          opacity: visible ? 1 : 0,
-        }}
-      >
-        {/* Icon */}
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4 ${dialog.danger ? 'bg-rose-50' : 'bg-amber-50'}`}>
-          {dialog.danger
-            ? <Trash2 size={28} className="text-rose-500" strokeWidth={2} />
-            : <AlertTriangle size={28} className="text-amber-500" strokeWidth={2} />
-          }
-        </div>
-
-        {/* Title */}
-        <h3 className="text-lg font-black text-slate-800 text-center mb-2">{dialog.title}</h3>
-
-        {/* Message */}
-        <p className="text-sm text-slate-500 font-medium text-center leading-relaxed mb-6">{dialog.message}</p>
-
-        {/* Buttons */}
-        <div className="flex gap-3">
-          <button
+    <AnimatePresence>
+      {dialog && (
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 overflow-hidden">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={dialog.onCancel}
-            className="flex-1 py-3 px-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 active:scale-95 transition-all"
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-[6px]"
+          />
+
+          {/* Dialog Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: "spring", damping: 25, stiffness: 400 }}
+            className="relative bg-white rounded-[2.5rem] shadow-2xl max-w-sm w-full p-8 border border-white/20"
           >
-            {dialog.cancelText}
-          </button>
-          <button
-            onClick={dialog.onConfirm}
-            className={`flex-1 py-3 px-4 font-black rounded-2xl active:scale-95 transition-all shadow-lg text-white ${
-              dialog.danger
-                ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-200'
-                : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
-            }`}
-          >
-            {dialog.confirmText}
-          </button>
+            {/* Icon Decoration */}
+            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 ${dialog.danger ? 'bg-rose-50' : 'bg-amber-50'}`}>
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${dialog.danger ? 'bg-rose-100' : 'bg-amber-100'}`}>
+                {dialog.danger
+                  ? <Trash2 size={32} className="text-rose-600" strokeWidth={2.5} />
+                  : <AlertTriangle size={32} className="text-amber-600" strokeWidth={2.5} />
+                }
+              </div>
+            </div>
+
+            {/* Content */}
+            <h3 className="text-2xl font-black text-slate-800 text-center mb-3 leading-tight">{dialog.title}</h3>
+            <p className="text-slate-500 font-medium text-center leading-relaxed mb-8 px-2">{dialog.message}</p>
+
+            {/* Actions */}
+            <div className="flex gap-4">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={dialog.onCancel}
+                className="flex-1 py-4 px-6 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-colors"
+              >
+                {dialog.cancelText}
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={dialog.onConfirm}
+                className={`flex-1 py-4 px-6 font-black rounded-2xl shadow-xl shadow-slate-200 text-white transition-all ${
+                  dialog.danger
+                    ? 'bg-gradient-to-br from-rose-500 to-rose-600'
+                    : 'bg-gradient-to-br from-indigo-500 to-indigo-600'
+                }`}
+              >
+                {dialog.confirmText}
+              </motion.button>
+            </div>
+          </motion.div>
         </div>
-      </div>
-    </div>,
+      )}
+    </AnimatePresence>,
     document.body
   );
 }
