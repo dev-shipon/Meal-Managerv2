@@ -1621,8 +1621,19 @@ ${JSON.stringify(bazarItemsForAi, null, 2)}
     };
     const titles = { wifi: "ওয়াইফাই বিল", current: "বিদ্যুৎ বিল", rent: "বাসা ভাড়া", maid: "খালার বেতন" };
 
-    const deadlineStr = dateMapping[type] || 'Not Set';
+    const deadlineDayStr = dateMapping[type] || 'Not Set';
     const titleStr = titles[type];
+
+    // Build full deadline date string: e.g. "১৫ এপ্রিল ২০২৬"
+    const [deadlineYear, deadlineMonthNum] = selectedMonth.split('-');
+    const banglaMonthNames = [
+      'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
+      'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
+    ];
+    const deadlineMonthName = banglaMonthNames[parseInt(deadlineMonthNum) - 1] || '';
+    const deadlineStr = deadlineDayStr !== 'Not Set'
+      ? `${toBengaliNumber(deadlineDayStr)} ${deadlineMonthName} ${toBengaliNumber(deadlineYear)}`
+      : 'নির্ধারিত নয়';
 
     let html = `
       <!DOCTYPE html>
@@ -1652,7 +1663,7 @@ ${JSON.stringify(bazarItemsForAi, null, 2)}
         </div>
         <div class="notice">
           <p>দয়া করে নির্দিষ্ট ডেডলাইনের মধ্যে <strong>${titleStr}</strong> পরিশোধ করুন।</p>
-          <div style="font-weight:900; color:#e11d48;">শেষ তারিখ: ${toBengaliNumber(deadlineStr)} তারিখ | জরিমানা: ৫০ টাকা</div>
+          <div style="font-weight:900; color:#e11d48;">শেষ তারিখ: ${deadlineStr} | জরিমানা: ৫০ টাকা</div>
         </div>
         <div class="table-box">
           <table>
@@ -2849,40 +2860,12 @@ ${JSON.stringify(bazarItemsForAi, null, 2)}
                   </div>
                 </div>
 
-                {isManager ? (
-                  <div className="bg-gradient-to-br from-indigo-50/80 to-purple-50/80 backdrop-blur-xl p-5 md:p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(99,102,241,0.05)] border border-indigo-100/50 space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-black text-indigo-900 text-xs uppercase tracking-wider flex items-center gap-2"><Settings size={14} className="text-indigo-500" /> বিল আপডেট (অ্যাডমিন প্যানেল)</h3>
-                      <span className="text-[10px] bg-white/50 px-2 py-1 rounded-full font-bold text-indigo-600">সব মেম্বারের জন্য প্রযোজ্য</span>
-                    </div>
-                    <form onSubmit={updateBills} className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">WiFi (Last Date: {dueDates.wifi})</label>
-                        <input name="wifi" type="number" defaultValue={safeNum(bills.wifi)} className="w-full p-3 bg-white/50 backdrop-blur-sm border border-white/40 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 rounded-xl text-sm font-bold outline-none shadow-inner transition transition-all transform-gpu text-center" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">বিদ্যুৎ (Last Date: {dueDates.current})</label>
-                        <input name="current" type="number" defaultValue={safeNum(bills.current)} className="w-full p-3 bg-white/50 backdrop-blur-sm border border-white/40 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 rounded-xl text-sm font-bold outline-none shadow-inner transition transition-all transform-gpu text-center" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">ভাড়া (Last Date: {dueDates.rent})</label>
-                        <input name="rent" type="number" defaultValue={safeNum(bills.rent)} className="w-full p-3 bg-white/50 backdrop-blur-sm border border-white/40 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 rounded-xl text-sm font-bold outline-none shadow-inner transition transition-all transform-gpu text-center" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-400 block mb-1">খালার বেতন (Last Date: {dueDates.maid || '5'})</label>
-                        <input name="maid" type="number" defaultValue={safeNum(bills.maid)} className="w-full p-3 bg-white/50 backdrop-blur-sm border border-white/40 focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 rounded-xl text-sm font-bold outline-none shadow-inner transition transition-all transform-gpu text-center" />
-                      </div>
-                      <button className="col-span-2 md:col-span-4 bg-gradient-to-r from-slate-700 to-slate-900 border border-slate-600 text-white shadow-lg hover:shadow-slate-300 p-3 rounded-xl text-xs font-bold shadow-lg shadow-slate-200 active:scale-95 transition transition-all transform-gpu">বিল আপডেট করুন</button>
-                    </form>
-                  </div>
-                ) : (
-                  <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-[2rem] text-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.3)] grid grid-cols-4 gap-4 text-center border border-slate-700">
-                    <div><span className="text-[10px] uppercase font-bold opacity-60">WiFi (Last Date: {dueDates.wifi})</span><p className="font-black text-lg">৳{sharePerHead.wifi.toFixed(0)}</p></div>
-                    <div className="border-x border-indigo-200"><span className="text-[10px] uppercase font-bold opacity-60">বিদ্যুৎ (Last Date: {dueDates.current})</span><p className="font-black text-lg">৳{sharePerHead.currentBase.toFixed(0)}</p></div>
-                    <div className="border-r border-indigo-200"><span className="text-[10px] uppercase font-bold opacity-60">ভাড়া (Last Date: {dueDates.rent})</span><p className="font-black text-lg">৳{sharePerHead.rent.toFixed(0)}</p></div>
-                    <div><span className="text-[10px] uppercase font-bold opacity-60">খালা (Last Date: {dueDates.maid || '5'})</span><p className="font-black text-lg">৳{sharePerHead.maid.toFixed(0)}</p></div>
-                  </div>
-                )}
+                <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-[2rem] text-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.3)] grid grid-cols-4 gap-4 text-center border border-slate-700">
+                  <div><span className="text-[10px] uppercase font-bold opacity-60">WiFi (Last Date: {dueDates.wifi})</span><p className="font-black text-lg">৳{sharePerHead.wifi.toFixed(0)}</p></div>
+                  <div className="border-x border-indigo-200"><span className="text-[10px] uppercase font-bold opacity-60">বিদ্যুৎ (Last Date: {dueDates.current})</span><p className="font-black text-lg">৳{sharePerHead.currentBase.toFixed(0)}</p></div>
+                  <div className="border-r border-indigo-200"><span className="text-[10px] uppercase font-bold opacity-60">ভাড়া (Last Date: {dueDates.rent})</span><p className="font-black text-lg">৳{sharePerHead.rent.toFixed(0)}</p></div>
+                  <div><span className="text-[10px] uppercase font-bold opacity-60">খালা (Last Date: {dueDates.maid || '5'})</span><p className="font-black text-lg">৳{sharePerHead.maid.toFixed(0)}</p></div>
+                </div>
 
                 <div className="grid gap-3">
                   <h3 className="text-xs font-black text-slate-400 uppercase tracking-wider px-2">বিল পেমেন্ট স্ট্যাটাস ({selectedMonth})</h3>
