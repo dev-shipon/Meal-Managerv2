@@ -82,7 +82,10 @@ export default function Toast() {
   const { toasts, removeToast } = useToast();
 
   return createPortal(
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999999] flex flex-col items-center pointer-events-none w-full px-4 max-h-screen overflow-hidden">
+    <div 
+      className="fixed top-6 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none w-full px-4 max-h-screen overflow-hidden"
+      style={{ zIndex: 999999999 }}
+    >
       <AnimatePresence mode="popLayout" initial={false}>
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />

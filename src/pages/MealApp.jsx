@@ -129,7 +129,7 @@ const parseGeminiJsonResponse = (text) => {
 };
 
 const TAB_DATA_REQUIREMENTS = {
-  dashboard: ['meals', 'bazar', 'deposits', 'fines', 'billTracking'],
+  dashboard: ['meals', 'bazar', 'deposits', 'fines', 'billTracking', 'polls'],
   bills: ['deposits', 'fines', 'billTracking'],
   meals: ['meals'],
   bazar: ['bazar', 'bazarRequests'],
@@ -888,7 +888,6 @@ export default function MealApp() {
             [mId]: previousCount,
           },
         }));
-        alert("মিল আপডেট করতে সমস্যা হয়েছে।");
         showToast("মিল আপডেট করতে সমস্যা হয়েছে।", 'error');
       }
     );
@@ -2157,9 +2156,16 @@ ${JSON.stringify(bazarItemsForAi, null, 2)}
             </button>
             <button
               onClick={() => switchTab('vote')}
-              className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl font-bold transition transition-all transform-gpu ${activeTab === 'vote' ? 'bg-rose-500 text-white shadow-lg shadow-rose-200 translate-x-2' : 'text-slate-600 hover:bg-rose-50 hover:text-rose-500'}`}
+              className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl font-bold transition transition-all transform-gpu ${activeTab === 'vote' ? 'bg-rose-500 text-white shadow-lg shadow-rose-200 translate-x-2' : 'text-slate-600 hover:bg-rose-50 hover:text-rose-500'}`}
             >
-              <CheckSquare size={20} /> <span>ভোটিং সিস্টেম</span>
+              <div className="flex items-center gap-3">
+                <CheckSquare size={20} /> <span>ভোটিং সিস্টেম</span>
+              </div>
+              {polls.length > 0 && activeTab !== 'vote' && (
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-black text-white ring-2 ring-white animate-pulse">
+                  {polls.length}
+                </span>
+              )}
             </button>
             <button
               onClick={() => switchTab('bua')}
@@ -2696,6 +2702,7 @@ ${JSON.stringify(bazarItemsForAi, null, 2)}
                     </div>
                   );
                 })()}
+
 
                 {/* Stats Cards */}
                 {isManager && (
@@ -3815,7 +3822,18 @@ ${JSON.stringify(bazarItemsForAi, null, 2)}
                           </div>
                           <div className="mt-5 pt-4 border-t border-slate-100 flex justify-between items-center">
                             <span className="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">Total Votes: {totalVotes}</span>
-                            <span className="text-[10px] font-bold text-slate-400">{new Date(poll.createdAt).toLocaleDateString()}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-[10px] font-bold text-slate-400">{new Date(poll.createdAt).toLocaleDateString()}</span>
+                              {isManager && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); deletePoll(poll.id); }}
+                                  className="text-slate-400 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 p-1.5 rounded-lg border border-transparent hover:border-rose-100 transition"
+                                  title="পোল ডিলিট করুন"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
@@ -4142,7 +4160,7 @@ ${JSON.stringify(bazarItemsForAi, null, 2)}
                       updateDoc(doc(db, 'groups', appId), { name: next }),
                     ]);
                     setMessName(next);
-                    alert("মেস বা গ্রুপের নাম সফলভাবে আপডেট হয়েছে!");
+                    showToast("মেস বা গ্রুপের নাম সফলভাবে আপডেট হয়েছে!", 'success');
                   }} className="flex flex-col gap-2 pt-2 border-t border-slate-100">
                     <label className="text-[10px] font-black uppercase text-slate-400">মেসের নাম</label>
                     <div className="flex gap-2">
@@ -4458,18 +4476,18 @@ ${JSON.stringify(bazarItemsForAi, null, 2)}
         <div className="flex w-full items-stretch justify-between gap-0 px-1 pt-1.5 pb-1 min-h-[3.5rem]">
           {(isManager
             ? [
-              { id: 'dashboard', icon: LayoutDashboard, label: 'ড্যাশবোর্ড' },
-              { id: 'meals', icon: Utensils, label: 'মিল' },
-              { id: 'bazar', icon: ShoppingCart, label: 'বাজার' },
-              { id: 'deposit', icon: Wallet, label: 'জমা' },
-              { id: 'members', icon: Users, label: 'মেম্বার' },
-            ]
+                { id: 'dashboard', icon: LayoutDashboard, label: 'ড্যাশবোর্ড' },
+                { id: 'meals', icon: Utensils, label: 'মিল' },
+                { id: 'bazar', icon: ShoppingCart, label: 'বাজার' },
+                { id: 'deposit', icon: Wallet, label: 'জমা' },
+                { id: 'members', icon: Users, label: 'মেম্বার' },
+              ]
             : [
               { id: 'dashboard', icon: LayoutDashboard, label: 'প্রোফাইল' },
               { id: 'bazar', icon: ShoppingCart, label: 'বাজার' },
-              { id: 'menu', icon: CalendarIcon, label: 'মেনু' },
               { id: 'deposit', icon: Wallet, label: 'জমা' },
               { id: 'members', icon: Users, label: 'মেম্বার' },
+              { id: 'menu', icon: CalendarIcon, label: 'মেনু' },
             ]
           ).map((item) => (
             <button

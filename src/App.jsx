@@ -87,8 +87,8 @@ function App() {
             </AnimatePresence>
           </Suspense>
           {/* Global UI overlays */}
-          <Toast />
           <ConfirmDialog />
+          <Toast />
         </AuthProvider>
       </ConfirmDialogProvider>
     </ToastProvider>

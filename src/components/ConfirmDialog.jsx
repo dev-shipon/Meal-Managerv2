@@ -10,7 +10,10 @@ export default function ConfirmDialog() {
   return createPortal(
     <AnimatePresence>
       {dialog && (
-        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 overflow-hidden">
+        <div 
+          className="fixed inset-0 flex items-center justify-center p-4 overflow-hidden"
+          style={{ zIndex: 99999999 }}
+        >
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
