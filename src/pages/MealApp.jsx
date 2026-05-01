@@ -20,106 +20,16 @@ import { getWhatsAppSupportUrl } from '../constants/support';
 import { writeJoinKeyIndex } from '../utils/groupLookup';
 import { generateGeminiText } from '../services/geminiService';
 import { computeAdvancedMealRateProjection } from '../utils/mealRateForecast';
+import { safeNum, safeStr, formatDate, toBengaliNumber, toBengaliMonth, getMonthKey, convertBengaliToEnglishNumbers } from '../utils/formatters';
+import BazarSection from '../components/MealApp/BazarSection';
+import EmptyState from '../components/MealApp/Shared/EmptyState';
 
-// --- Empty State Component ---
-const EmptyState = ({ icon: Icon, title, subtitle, color = 'indigo', action }) => {
-  const cm = {
-    indigo: { bg: 'bg-indigo-50', text: 'text-indigo-500', border: 'border-indigo-200', sub: 'text-indigo-300' },
-    rose: { bg: 'bg-rose-50', text: 'text-rose-500', border: 'border-rose-200', sub: 'text-rose-300' },
-    emerald: { bg: 'bg-emerald-50', text: 'text-emerald-500', border: 'border-emerald-200', sub: 'text-emerald-300' },
-    amber: { bg: 'bg-amber-50', text: 'text-amber-500', border: 'border-amber-200', sub: 'text-amber-300' },
-    slate: { bg: 'bg-slate-50', text: 'text-slate-400', border: 'border-slate-200', sub: 'text-slate-300' },
-  };
-  const c = cm[color] || cm.indigo;
-  return (
-    <div className={`flex flex-col items-center justify-center py-14 px-6 rounded-3xl border-2 border-dashed ${c.border} ${c.bg}`}>
-      <div className={`w-16 h-16 rounded-2xl ${c.bg} border ${c.border} flex items-center justify-center mb-4 shadow-sm ${c.text} transform transition-transform hover:scale-110 duration-300`}>
-        {Icon && <Icon size={32} strokeWidth={1.5} />}
-      </div>
-      <p className={`font-black text-base ${c.text} mb-1 text-center`}>{title}</p>
-      {subtitle && <p className={`text-xs font-medium text-center max-w-[200px] md:max-w-[300px] ${c.sub}`}>{subtitle}</p>}
-      {action && <div className="mt-5">{action}</div>}
-    </div>
-  );
-};
-
-// --- Helper: Robust Safe Data Rendering (CRASH PROTECTION) ---
-const safeStr = (val) => {
-  if (val === null || val === undefined) return "";
-  if (typeof val === 'string') return val;
-  if (typeof val === 'number') return String(val);
-  if (typeof val === 'boolean') return String(val);
-  return "";
-};
-
-/** Member profile modal: scrollable list areas for long monthly data */
+// Utility constants and functions moved to src/utils/formatters.js and Shared components.
 const MEMBER_DETAIL_LIST_SCROLL =
   'space-y-2 max-h-[min(45dvh,20rem)] min-h-0 overflow-y-auto overscroll-y-contain pr-1 scroll-smooth border border-slate-100 rounded-xl p-1 bg-slate-50/50';
 const MEMBER_DETAIL_SCROLL_HINT =
   '\u09AC\u09C7\u09B6\u09BF \u09A6\u09BF\u09A8 \u09B9\u09B2\u09C7 \u09A8\u09BF\u099A\u09C7\u09B0 \u09AC\u0995\u09CD\u09B8\u09C7 \u09B8\u09CD\u0995\u09CD\u09B0\u09B2 \u0995\u09B0\u09C1\u09A8';
-
-/** Old app default; if saved in mess_config it hid the real name from `groups`. */
 const LEGACY_PLACEHOLDER_MESS_NAME = 'তালুকদার মিল ম্যানেজার';
-
-const convertBengaliToEnglishNumbers = (str) => {
-  if (str === null || str === undefined) return '';
-  const bengaliNumbers = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-  return String(str).replace(/[০-৯]/g, (match) => bengaliNumbers.indexOf(match));
-};
-
-const toBengaliNumber = (str) => {
-  const bengaliNumbers = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-  return String(str).replace(/[0-9]/g, (match) => bengaliNumbers[match]);
-};
-
-const toBengaliMonth = (monthCode) => {
-  const [year, month] = monthCode.split('-');
-  const months = [
-    'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
-    'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
-  ];
-  return `${months[parseInt(month) - 1]} ${toBengaliNumber(year)}`;
-};
-
-const safeNum = (val) => {
-  if (val === null || val === undefined || val === '') return 0;
-  const englishVal = convertBengaliToEnglishNumbers(val);
-  const n = Number(englishVal);
-  return isNaN(n) ? 0 : n;
-};
-
-const getMonthKey = (dateVal) => {
-  if (!dateVal) return '';
-  try {
-    if (typeof dateVal === 'string' && /^\d{4}-\d{2}/.test(dateVal)) {
-      return dateVal.slice(0, 7);
-    }
-    const d = dateVal && typeof dateVal.toDate === 'function'
-      ? dateVal.toDate()
-      : new Date(dateVal);
-    if (isNaN(d.getTime())) return '';
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  } catch (e) {
-    return '';
-  }
-};
-
-const formatDate = (dateVal, toBengali = false) => {
-  if (!dateVal) return "";
-  try {
-    let d;
-    if (dateVal && typeof dateVal.toDate === 'function') {
-      d = dateVal.toDate();
-    } else {
-      d = new Date(dateVal);
-    }
-    if (isNaN(d.getTime())) return "";
-    const enDate = d.toLocaleDateString('en-GB');
-    return toBengali ? toBengaliNumber(enDate) : enDate;
-  } catch (e) {
-    return "";
-  }
-};
 
 const parseGeminiJsonResponse = (text) => {
   if (!text) throw new Error('AI response খালি এসেছে।');
@@ -2552,17 +2462,22 @@ ${JSON.stringify(bazarItemsForAi, null, 2)}
               <LogOut size={16} className="text-rose-600" />
             </button>
             <div className="flex flex-col items-center flex-1 min-w-0 px-1">
-              <h1 className="text-sm font-black tracking-tight text-slate-800 bg-clip-text text-transparent bg-gradient-to-r from-indigo-700 to-violet-700 text-center truncate w-full">
-                {messName} {groupPlan === 'premium' && <span className="text-amber-500 font-bold ml-1 text-xs">PRO</span>}
+              <h1 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center truncate w-full mb-0.5">
+                {messName} {groupPlan === 'premium' && <span className="text-amber-500 ml-1">PRO</span>}
               </h1>
-              {groupPlan === 'free' && !pendingReq && (
-                <p className="text-[9px] font-black tracking-wider text-rose-500 uppercase bg-rose-50 px-2 py-0.5 rounded-full mt-1">ফ্রি ট্রায়াল: {trialDaysLeft} দিন বাকি</p>
-              )}
-              {pendingReq && (
-                <p className="text-[9px] font-black tracking-wider text-sky-600 uppercase bg-sky-50 px-2 py-0.5 rounded-full mt-1 flex items-center gap-1">
-                  <Clock size={10} /> পেমেন্ট ভেরিফাই হচ্ছে...
-                </p>
-              )}
+              <div className="relative flex items-center gap-1.5 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 active:scale-95 transition-transform">
+                <CalendarIcon size={12} className="text-indigo-600" />
+                <span className="text-[11px] font-black text-indigo-700">
+                  {toBengaliMonth(selectedMonth)}
+                </span>
+                <input 
+                  type="month" 
+                  value={selectedMonth} 
+                  onChange={(e) => setSelectedMonth(e.target.value)} 
+                  onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20" 
+                />
+              </div>
             </div>
             <button
               type="button"
@@ -2621,6 +2536,24 @@ ${JSON.stringify(bazarItemsForAi, null, 2)}
             )}
           </div>
           <div className="flex items-center gap-3">
+            <div className="relative flex items-center gap-3 bg-slate-50 border border-slate-200 px-5 py-2.5 rounded-2xl shadow-inner group hover:border-indigo-300 transition-colors cursor-pointer">
+              <div className="bg-indigo-600 p-1.5 rounded-lg text-white shadow-md shadow-indigo-100">
+                <CalendarIcon size={16} />
+              </div>
+              <div className="flex flex-col leading-tight">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">সিলেক্টেড মাস</span>
+                <span className="text-sm font-black text-indigo-700">
+                  {toBengaliMonth(selectedMonth)}
+                </span>
+              </div>
+              <input 
+                type="month" 
+                value={selectedMonth} 
+                onChange={(e) => setSelectedMonth(e.target.value)} 
+                onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-20" 
+              />
+            </div>
             <div className="hidden md:flex items-center gap-2 text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-inner">
               <div className={`w-2 h-2 rounded-full ${pendingWrites > 0 ? 'bg-amber-500 animate-pulse' : isOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-rose-500 animate-pulse'}`} />
               {pendingWrites > 0 ? <span className="text-amber-700">Syncing {pendingWrites}</span> : isOnline ? <span className="text-emerald-700">Online Sync</span> : <span className="text-rose-600">Offline (Saving)</span>}
@@ -2874,7 +2807,6 @@ ${JSON.stringify(bazarItemsForAi, null, 2)}
                   <h3 className="font-black text-slate-800 flex items-center gap-2"><Zap size={20} className="text-amber-500" /> ফিক্সড বিল</h3>
                   <div className="flex items-center gap-2">
                     <button onClick={() => setShowNoticePopup(true)} className="bg-rose-100/80 hover:bg-rose-500 text-rose-600 hover:text-white p-2 md:px-4 rounded-xl text-xs font-black shadow-sm transition transition-all flex items-center gap-2"><Printer size={16} /> <span className="hidden md:inline">Download Notice</span></button>
-                    <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="p-2 bg-slate-50 rounded-xl text-xs font-bold outline-none border border-slate-200" />
                   </div>
                 </div>
 
@@ -3058,317 +2990,39 @@ ${JSON.stringify(bazarItemsForAi, null, 2)}
               </motion.div>
             )}
 
-            {/* Bazar Tab */}
             {activeTab === 'bazar' && (
-              <motion.div key="bazar" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }} className="space-y-6 transform-gpu">
-                {isManager && (
-                  <div className="space-y-4">
-                    {bazarRequests.length > 0 && (
-                      <div className="bg-amber-50 p-6 rounded-[2rem] shadow-sm border border-amber-200">
-                        <h3 className="font-black text-amber-900 mb-4 flex items-center gap-2">
-                          <Clock size={18} className="text-amber-500" /> বাজার রিকোয়েস্ট ({bazarRequests.length})
-                        </h3>
-                        <div className="space-y-3 max-h-72 overflow-y-auto pr-2">
-                          {bazarRequests
-                            .slice()
-                            .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date))
-                            .map((req) => (
-                              <div key={req.id} className="bg-white p-4 rounded-xl border border-amber-100 flex flex-col gap-3 shadow-sm content-visibility-auto">
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="min-w-0">
-                                    <p className="font-bold text-slate-800 text-sm">{req.memberName || getMemberName(req.memberId)}</p>
-                                    <p className="text-[10px] text-slate-500 font-medium">{formatDate(req.date)} • ৳{safeNum(req.amount)}</p>
-                                  </div>
-                                  <div className="flex gap-1 shrink-0">
-                                    <button onClick={() => setSelectedBazarDetail(req)} className="bg-indigo-50 text-indigo-600 p-1.5 rounded-lg hover:bg-indigo-100"><FileText size={14} /></button>
-                                    <button onClick={() => handleApproveBazarRequest(req)} className="bg-emerald-500 text-white p-1.5 rounded-lg shadow-sm hover:bg-emerald-600"><CheckCircle size={14} /></button>
-                                    <button onClick={() => handleRejectBazarRequest(req.id)} className="bg-rose-100 text-rose-500 p-1.5 rounded-lg hover:bg-rose-200"><XCircle size={14} /></button>
-                                  </div>
-                                </div>
-                                <div className="flex items-center justify-between gap-3">
-                                  <p className="text-xs text-slate-600 font-semibold truncate">{req.items && req.items.length > 0 ? `${req.items.length}টি আইটেম জমা দিয়েছে` : safeStr(req.item)}</p>
-                                  <span className={`text-[9px] uppercase font-black tracking-wider px-2 py-1 rounded-full ${req.type === 'credit' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
-                                    {req.type === 'credit' ? 'বাকি' : 'নগদ'}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="bg-white/60 backdrop-blur-xl p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition transition-all transform-gpu duration-300 space-y-4">
-                        <h3 className="font-bold text-slate-700 flex items-center gap-2"><ShoppingCart size={18} className="text-indigo-600" /> বাজার খরচ</h3>
-                        <form onSubmit={addBazar} className="space-y-4">
-                          <div className="space-y-3">
-                            {bazarRows.map((row, index) => (
-                              <div key={row.id} className="flex flex-col gap-2 bg-white/80 p-3 rounded-xl border border-indigo-100 shadow-sm relative pt-4 mt-2">
-                                <h4 className="text-[10px] font-black text-indigo-400 absolute -top-2 left-3 bg-white px-2 py-0.5 rounded border border-indigo-50">আইটেম {index + 1}</h4>
-                                <div className="flex flex-col md:flex-row gap-2 mt-1">
-                                  <div className="flex-1">
-                                    <input value={row.item} onChange={e => { const newRows = [...bazarRows]; newRows[index].item = e.target.value; setBazarRows(newRows); }} placeholder="কী কিনেছেন?" className="w-full p-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-lg text-sm font-bold outline-none" required />
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <div className="w-1/2 md:w-auto">
-                                      <input value={row.qty} onChange={e => { const newRows = [...bazarRows]; newRows[index].qty = e.target.value; setBazarRows(newRows); }} placeholder="পরিমাণ" className="w-full p-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-lg text-sm font-bold outline-none" required />
-                                    </div>
-                                    <div className="w-1/2 md:w-auto">
-                                      <input value={row.amount} type="text" inputMode="numeric" onChange={e => { const newRows = [...bazarRows]; newRows[index].amount = e.target.value; setBazarRows(newRows); }} placeholder="দাম" className="w-full p-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-lg text-sm font-black text-indigo-700 outline-none" required />
-                                    </div>
-                                  </div>
-                                </div>
-                                {bazarRows.length > 1 && (
-                                  <button type="button" onClick={() => setBazarRows(bazarRows.filter((_, i) => i !== index))} className="absolute -top-2 -right-2 p-1.5 text-rose-500 bg-white border border-rose-200 rounded-lg shadow-sm"><X size={14} /></button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="flex flex-col sm:flex-row justify-between shrink-0 items-center gap-2">
-                            <button type="button" onClick={() => setBazarRows([...bazarRows, { id: Date.now(), item: '', amount: '', qty: '' }])} className="w-full sm:w-auto text-xs font-bold text-indigo-600 bg-indigo-50 border border-dashed border-indigo-200 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-100"><Plus size={16} /> আইটেম যোগ করুন</button>
-                            <div className="w-full sm:w-auto bg-green-50 border border-green-200 px-4 py-2 rounded-xl flex items-center justify-between sm:justify-start gap-4">
-                              <span className="text-xs font-bold text-green-700">মোট খরচ:</span>
-                              <span className="text-lg font-black text-green-700">৳{bazarRows.reduce((a, b) => a + Number(b.amount || 0), 0)}</span>
-                            </div>
-                          </div>
-
-                          <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2">
-                              <Users size={18} className="text-indigo-500 shrink-0" />
-                              <div>
-                                <p className="text-xs font-bold text-slate-700">কে বাজার করেছে?</p>
-                                <p className="text-[9px] text-slate-400 font-medium">নিজে বা অন্যের নাম দিন</p>
-                              </div>
-                            </div>
-                            <button type="button" onClick={() => setShowBazarMemberModal(true)} className={`px-3 py-2 rounded-lg border font-bold text-[11px] flex items-center gap-1.5 shrink-0 ${selectedBazarMembers.length > 0 ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-indigo-600 border-indigo-200'}`}>
-                              <UserPlus size={14} />
-                              {selectedBazarMembers.length > 0 ? `${selectedBazarMembers.length} জন সিলেক্টেড` : 'সিলেক্ট করুন'}
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">তারিখ</label>
-                              <input name="date" type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full p-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-400 rounded-xl text-xs font-bold outline-none" required />
-                            </div>
-
-                            <div>
-                              <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">মেমো (অপশনাল)</label>
-                              <div className="bg-white border border-slate-200 p-1.5 rounded-xl flex items-center gap-2 relative overflow-hidden cursor-pointer h-[38px]">
-                                <input type="file" accept="image/*" onChange={handlePhotoUpload} className="absolute inset-0 w-full h-full opacity-0" />
-                                <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${bazarPhotoBase64 ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'}`}>
-                                  {bazarPhotoBase64 ? <CheckCircle size={14} /> : <FileText size={14} />}
-                                </div>
-                                <p className="text-[10px] font-bold text-slate-500 truncate mr-1">{bazarPhotoBase64 ? 'ছবি আছে' : 'ছবি দিন'}</p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <label className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer [&:has(input:checked)]:border-emerald-500 [&:has(input:checked)]:bg-emerald-50 text-emerald-600">
-                              <input type="radio" name="type" value="cash" defaultChecked className="w-4 h-4 accent-emerald-500 shrink-0 ml-1" />
-                              <span className="font-bold text-slate-700 text-[11px]"><Wallet size={12} className="inline mr-1 text-emerald-500" /> নগদ</span>
-                            </label>
-                            <label className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer [&:has(input:checked)]:border-rose-500 [&:has(input:checked)]:bg-rose-50 text-rose-500">
-                              <input type="radio" name="type" value="credit" className="w-4 h-4 accent-rose-500 shrink-0 ml-1" />
-                              <span className="font-bold text-slate-700 text-[11px]"><CreditCard size={12} className="inline mr-1 text-rose-500" /> বাকি</span>
-                            </label>
-                          </div>
-
-                          <button disabled={isBazarSubmitting} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-xl font-bold text-sm shadow-md active:scale-95 disabled:opacity-70 flex justify-center items-center gap-2">
-                            {isBazarSubmitting ? <Loader2 className="animate-spin" size={18} /> : 'বাজার সেভ করুন'}
-                          </button>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {!isManager && loggedInMember && (
-                  <div className="bg-white/60 backdrop-blur-xl p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 space-y-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="font-bold text-slate-700 flex items-center gap-2"><ShoppingCart size={18} className="text-indigo-600" /> বাজার রিকোয়েস্ট পাঠান</h3>
-                        <p className="text-xs text-slate-500 font-medium mt-1">আপনি বাজার করলে এখান থেকে জমা দিন। ম্যানেজার approve করলে সেটা মূল বাজার তালিকায় যোগ হবে।</p>
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-700 px-3 py-1 rounded-full border border-amber-100">approve লাগবে</span>
-                    </div>
-                    <form onSubmit={submitBazarRequest} className="space-y-4">
-                      <div className="space-y-3">
-                        {bazarRows.map((row, index) => (
-                          <div key={row.id} className="flex flex-col gap-2 bg-white/80 p-3 rounded-xl border border-indigo-100 shadow-sm relative pt-4 mt-2">
-                            <h4 className="text-[10px] font-black text-indigo-400 absolute -top-2 left-3 bg-white px-2 py-0.5 rounded border border-indigo-50">আইটেম {index + 1}</h4>
-                            <div className="flex flex-col md:flex-row gap-2 mt-1">
-                              <div className="flex-1">
-                                <input value={row.item} onChange={e => { const newRows = [...bazarRows]; newRows[index].item = e.target.value; setBazarRows(newRows); }} placeholder="কী কিনেছেন?" className="w-full p-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-lg text-sm font-bold outline-none" required />
-                              </div>
-                              <div className="flex gap-2">
-                                <div className="w-1/2 md:w-auto">
-                                  <input value={row.qty} onChange={e => { const newRows = [...bazarRows]; newRows[index].qty = e.target.value; setBazarRows(newRows); }} placeholder="পরিমাণ" className="w-full p-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-lg text-sm font-bold outline-none" required />
-                                </div>
-                                <div className="w-1/2 md:w-auto">
-                                  <input value={row.amount} type="text" inputMode="numeric" onChange={e => { const newRows = [...bazarRows]; newRows[index].amount = e.target.value; setBazarRows(newRows); }} placeholder="দাম" className="w-full p-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-lg text-sm font-black text-indigo-700 outline-none" required />
-                                </div>
-                              </div>
-                            </div>
-                            {bazarRows.length > 1 && (
-                              <button type="button" onClick={() => setBazarRows(bazarRows.filter((_, i) => i !== index))} className="absolute -top-2 -right-2 p-1.5 text-rose-500 bg-white border border-rose-200 rounded-lg shadow-sm"><X size={14} /></button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row justify-between shrink-0 items-center gap-2">
-                        <button type="button" onClick={() => setBazarRows([...bazarRows, { id: Date.now(), item: '', amount: '', qty: '' }])} className="w-full sm:w-auto text-xs font-bold text-indigo-600 bg-indigo-50 border border-dashed border-indigo-200 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 hover:bg-indigo-100"><Plus size={16} /> আইটেম যোগ করুন</button>
-                        <div className="w-full sm:w-auto bg-green-50 border border-green-200 px-4 py-2 rounded-xl flex items-center justify-between sm:justify-start gap-4">
-                          <span className="text-xs font-bold text-green-700">মোট খরচ:</span>
-                          <span className="text-lg font-black text-green-700">৳{bazarRows.reduce((a, b) => a + safeNum(b.amount), 0)}</span>
-                        </div>
-                      </div>
-
-                      <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-black">
-                            {safeStr(loggedInMember.name).charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-slate-700 truncate max-w-[120px]">{safeStr(loggedInMember.name)}</p>
-                            <p className="text-[9px] font-bold text-indigo-500">আপনার নামে জমা হবে</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">তারিখ</label>
-                          <input name="date" type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full p-2.5 bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-400 rounded-xl text-xs font-bold outline-none" required />
-                        </div>
-
-                        <div>
-                          <label className="text-[10px] font-bold text-slate-500 ml-1 mb-1 block">মেমো (অপশনাল)</label>
-                          <div className="bg-white border border-slate-200 p-1.5 rounded-xl flex items-center gap-2 relative overflow-hidden cursor-pointer h-[38px]">
-                            <input type="file" accept="image/*" onChange={handlePhotoUpload} className="absolute inset-0 w-full h-full opacity-0" />
-                            <div className={`w-6 h-6 rounded shrink-0 flex items-center justify-center ${bazarPhotoBase64 ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'}`}>
-                              {bazarPhotoBase64 ? <CheckCircle size={14} /> : <FileText size={14} />}
-                            </div>
-                            <p className="text-[10px] font-bold text-slate-500 truncate mr-1">{bazarPhotoBase64 ? 'ছবি আছে' : 'ছবি দিন'}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <label className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer [&:has(input:checked)]:border-emerald-500 [&:has(input:checked)]:bg-emerald-50 text-emerald-600">
-                          <input type="radio" name="type" value="cash" defaultChecked className="w-4 h-4 accent-emerald-500 shrink-0 ml-1" />
-                          <span className="font-bold text-slate-700 text-[11px]"><Wallet size={12} className="inline mr-1 text-emerald-500" /> নগদ</span>
-                        </label>
-                        <label className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer [&:has(input:checked)]:border-rose-500 [&:has(input:checked)]:bg-rose-50 text-rose-500">
-                          <input type="radio" name="type" value="credit" className="w-4 h-4 accent-rose-500 shrink-0 ml-1" />
-                          <span className="font-bold text-slate-700 text-[11px]"><CreditCard size={12} className="inline mr-1 text-rose-500" /> বাকি</span>
-                        </label>
-                      </div>
-
-                      <button disabled={isBazarReqSubmitting} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-xl font-bold text-sm shadow-md active:scale-95 disabled:opacity-70 flex items-center justify-center gap-2">
-                        {isBazarReqSubmitting ? <Loader2 className="animate-spin" size={18} /> : 'রিকোয়েস্ট পাঠান'}
-                      </button>
-                    </form>
-                  </div>
-                )}
-                {/* Bazar Summary Cards */}
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-5 sm:p-6 rounded-[2rem] shadow-[0_10px_20px_-10px_rgba(16,185,129,0.5)] border border-emerald-400 flex flex-col justify-center text-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/20 rounded-full blur-xl -mr-8 -mt-8"></div>
-                    <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-emerald-100 mb-1 relative z-10">মোট নগদ বাজার</p>
-                    <h3 className="text-2xl sm:text-3xl font-black relative z-10">৳{bazarList.filter(b => b.type !== 'credit').reduce((s, i) => s + safeNum(i.amount), 0)}</h3>
-                  </div>
-                  <div className="bg-gradient-to-br from-rose-500 to-red-600 p-5 sm:p-6 rounded-[2rem] shadow-[0_10px_20px_-10px_rgba(244,63,94,0.5)] border border-rose-400 flex flex-col justify-center text-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/20 rounded-full blur-xl -mr-8 -mt-8"></div>
-                    <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-rose-100 mb-1 relative z-10">মোট বাকি বাজার</p>
-                    <h3 className="text-2xl sm:text-3xl font-black relative z-10">৳{bazarList.filter(b => b.type === 'credit').reduce((s, i) => s + safeNum(i.amount), 0)}</h3>
-                  </div>
-                </div>
-
-                <div className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50 overflow-hidden flex flex-col">
-                  <div className="p-4 bg-slate-50 border-b border-slate-100 flex flex-col gap-4">
-                    <div className="flex bg-white/80 p-1 rounded-2xl shadow-sm border border-slate-200 mx-auto w-full max-w-md relative">
-                      <button onClick={() => setBazarFilter('all')} className={`flex-1 py-3 rounded-[14px] text-[11px] font-black uppercase transition-all duration-300 ${bazarFilter === 'all' ? 'bg-slate-800 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>সব বাজার</button>
-                      <button onClick={() => setBazarFilter('cash')} className={`flex-1 py-3 rounded-[14px] text-[11px] font-black uppercase transition-all duration-300 ${bazarFilter === 'cash' ? 'bg-emerald-500 text-white shadow-md shadow-emerald-200' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>নগদ বাজার</button>
-                      <button onClick={() => setBazarFilter('credit')} className={`flex-1 py-3 rounded-[14px] text-[11px] font-black uppercase transition-all duration-300 ${bazarFilter === 'credit' ? 'bg-rose-500 text-white shadow-md shadow-rose-200' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>বাকি বাজার</button>
-                    </div>
-
-                    <div className="flex gap-2 w-full">
-                      <select value={bazarSearchMember} onChange={e => setBazarSearchMember(e.target.value)} className="p-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 outline-none flex-1 shadow-inner bg-white">
-                        <option value="">সব মেম্বার</option>
-                        {members.map(m => <option key={m.id} value={m.id}>{safeStr(m.name)}</option>)}
-                      </select>
-                      <input type="date" value={bazarSearchDate} onChange={e => setBazarSearchDate(e.target.value)} className="p-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 outline-none flex-1 shadow-inner bg-white" />
-                      {(bazarSearchMember || bazarSearchDate || bazarFilter !== 'all') && (
-                        <button onClick={() => { setBazarSearchMember(''); setBazarSearchDate(''); setBazarFilter('all'); }} className="p-2 bg-rose-50 text-rose-500 hover:bg-rose-100 rounded-xl transition shadow-sm"><X size={16} /></button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="max-h-[500px] overflow-y-auto w-full">
-                    {(() => {
-                      const filteredBazars = bazarList.slice()
-                        .sort((a, b) => new Date(b.date) - new Date(a.date))
-                        .filter(b => {
-                          const matchDate = bazarSearchDate ? b.date === bazarSearchDate : true;
-                          const matchMember = bazarSearchMember ? b.memberId === bazarSearchMember : true;
-                          return matchDate && matchMember;
-                        });
-
-                      const renderBazarItem = (i) => (
-                        <div key={i.id} onClick={(e) => {
-                          if (e.target.closest('button')) return;
-                          setSelectedBazarDetail(i);
-                        }} className="p-4 flex justify-between items-center hover:bg-slate-50 relative cursor-pointer group transition-colors border-b border-slate-100 last:border-0 w-full bg-white animate-in fade-in">
-                          <div className="flex flex-col">
-                            <span className="font-bold text-slate-700 text-sm group-hover:text-indigo-600 transition-colors">{i.items && i.items.length > 0 ? `${i.items.length}টি আইটেম` : safeStr(i.item)}</span>
-                            <span className="text-[10px] text-slate-400 font-medium">
-                              {getMemberName(i.memberId)} • {formatDate(i.date)}
-                            </span>
-                            {safeNum(i.sharedCount) > 1 && (
-                              <span className="mt-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full w-max">
-                                {safeNum(i.sharedCount)} জনে ভাগ করা বাজার
-                              </span>
-                            )}
-                            {i.photo && (
-                              <button onClick={(e) => { e.stopPropagation(); setSelectedReceipt(i.photo); }} className="mt-1 text-[10px] text-indigo-600 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded flex items-center gap-1 w-max active:scale-95 transition"><FileText size={10} /> রসিদ দেখুন</button>
-                            )}
-                          </div>
-                          <div className="text-right flex flex-col items-end gap-1">
-                            <span className="font-black text-slate-800 text-sm bg-slate-100 px-2 py-1 rounded-lg block w-max">৳{safeNum(i.amount)}</span>
-                            <span className={`text-[9px] uppercase font-black tracking-wider mt-1 block ${i.type === 'credit' ? 'text-rose-500' : 'text-emerald-500'}`}>
-                              {i.type === 'credit' ? 'বাকি' : 'নগদ'}
-                            </span>
-                            {isManager && (
-                              <button onClick={(e) => { e.stopPropagation(); removeBazar(i.id); }} className="text-[10px] font-black text-rose-500 hover:text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-100 px-2 py-1 rounded-lg transition">
-                                ডিলিট
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-
-                      if (bazarFilter === 'all') {
-                        const cashBazars = filteredBazars.filter(b => b.type !== 'credit');
-                        const creditBazars = filteredBazars.filter(b => b.type === 'credit');
-                        return (
-                          <div className="flex flex-col w-full animate-in fade-in">
-                            <div className="bg-emerald-50 text-emerald-700 p-2 px-4 font-black text-xs uppercase tracking-widest border-y border-emerald-100 w-full sticky top-0 z-10 backdrop-blur-md bg-emerald-50/90">নগদ বাজার শাখা</div>
-                            {cashBazars.length > 0 ? cashBazars.map(renderBazarItem) : <p className="text-center text-slate-400 text-xs italic py-6 bg-white w-full">কোনো নগদ বাজার নেই</p>}
-
-                            <div className="bg-rose-50 text-rose-700 p-2 px-4 font-black text-xs uppercase tracking-widest border-y border-rose-100 w-full sticky top-0 z-10 backdrop-blur-md bg-rose-50/90">বাকি বাজার শাখা</div>
-                            {creditBazars.length > 0 ? creditBazars.map(renderBazarItem) : <p className="text-center text-slate-400 text-xs italic py-6 bg-white w-full">কোনো বাকি বাজার নেই</p>}
-                          </div>
-                        );
-                      } else {
-                        const items = filteredBazars.filter(b => bazarFilter === 'cash' ? b.type !== 'credit' : b.type === 'credit');
-                        return items.length > 0 ? items.map(renderBazarItem) : <p className="text-center text-slate-400 text-xs italic py-8 bg-white w-full">কোনো বাজার নেই</p>;
-                      }
-                    })()}
-                  </div>
-                </div>
-              </motion.div>
+              <BazarSection
+                isManager={isManager}
+                loggedInMember={loggedInMember}
+                members={members}
+                bazarList={bazarList}
+                bazarRequests={bazarRequests}
+                monthlyBazarList={monthlyBazarList}
+                cashBazar={cashBazar}
+                creditBazarTotal={creditBazarTotal}
+                bazarFilter={bazarFilter}
+                setBazarFilter={setBazarFilter}
+                bazarSearchMember={bazarSearchMember}
+                setBazarSearchMember={setBazarSearchMember}
+                bazarSearchDate={bazarSearchDate}
+                setBazarSearchDate={setBazarSearchDate}
+                getMemberName={getMemberName}
+                setSelectedBazarDetail={setSelectedBazarDetail}
+                setSelectedReceipt={setSelectedReceipt}
+                removeBazar={removeBazar}
+                handleApproveBazarRequest={handleApproveBazarRequest}
+                handleRejectBazarRequest={handleRejectBazarRequest}
+                submitBazarRequest={submitBazarRequest}
+                addBazar={addBazar}
+                bazarRows={bazarRows}
+                setBazarRows={setBazarRows}
+                handlePhotoUpload={handlePhotoUpload}
+                bazarPhotoBase64={bazarPhotoBase64}
+                isBazarSubmitting={isBazarSubmitting}
+                isBazarReqSubmitting={isBazarReqSubmitting}
+                setShowBazarMemberModal={setShowBazarMemberModal}
+                selectedBazarMembers={selectedBazarMembers}
+              />
             )}
 
             {activeTab === 'fine' && (
